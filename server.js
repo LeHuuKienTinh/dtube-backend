@@ -20,7 +20,8 @@ const likeRoutes = require('./router/like.routes');
 const deviceRoutes = require('./router/device.routes');
 // const payRoutes = require('./router/pay.routes');
 const reportRoutes = require('./router/report.routes');
-const paymentRoutes = require('./router/payment.routes');
+// const paymentRoutes = require('./router/payment.routes');
+const orderRoutes = require('./router/order.routes');
 // MidleWare
 app.use(cors(
     //     {
@@ -44,11 +45,12 @@ app.use('/api/view', viewRoutes);
 app.use('/api/device', deviceRoutes);
 // app.use('/api/pay', payRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/payment', paymentRoutes);
+// app.use('/api/payment', paymentRoutes);
 // Sử dụng router Admin 
 app.use('/api/admin', userRoutes);
 app.use('/api/admin/banmovie', banflimRoutes);
 app.use('/api/admin/badwords', badwordsRoutes);
+app.use('/api/order', orderRoutes);
 
 // Run App
 app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên cổng ${PORT}`));

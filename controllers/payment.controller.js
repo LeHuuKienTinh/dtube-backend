@@ -1,130 +1,57 @@
-const crypto = require('crypto');
-const qs = require('qs');
-require('dotenv').config();
+const Order = require('../models/order.model');
+const Payment = require('../models/payment.model');
 
-function formatDate(date) {
-    const year = date.getFullYear();
-    const month = ('0' + (date.getMonth() + 1)).slice(-2);
-    const day = ('0' + date.getDate()).slice(-2);
-    const hours = ('0' + date.getHours()).slice(-2);
-    const minutes = ('0' + date.getMinutes()).slice(-2);
-    const seconds = ('0' + date.getSeconds()).slice(-2);
-    const createDate = `${year}${month}${day}${hours}${minutes}${seconds}`;
-    const orderId = `${year}${month}${day}${Math.floor(Math.random() * 100000)}`;
-    return { createDate, orderId };
-}
-
-function sortObject(obj) {
-    const ordered = {};
-    Object.keys(obj).sort().forEach(key => {
-        ordered[key] = obj[key];
-    });
-    return ordered;
-}
-
-exports.createPaymentUrl = (req, res) => {
+exports.handleSePayWebhook = async (req, res) => {
     try {
-        // Mã gốc của bạn ở đây...
-
-        const ipAddr = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-
-        const tmnCode = process.env.VNP_TMN_CODE;
-        const secretKey = process.env.VNP_HASH_SECRET;
-        const vnpUrl = process.env.VNP_URL;
-        const returnUrl = process.env.VNP_RETURN_URL;
-
-        if (!tmnCode || !secretKey || !vnpUrl || !returnUrl) {
-            return res.status(500).json({ success: false, message: 'Thiếu biến môi trường cấu hình VNPAY' });
+        const apiKeyHeader = req.headers['authorization'];
+        if (!apiKeyHeader || !apiKeyHeader.startsWith('Apikey ')) {
+            return res.status(401).send('Unauthorized');
         }
 
-        const { createDate, orderId } = formatDate(new Date());
-        const amount = Number(req.body.amount);
-        const bankCode = req.body.bankCode;
-        const orderInfo = req.body.orderDescription || 'Thanh toán đơn hàng';
-        const orderType = req.body.orderType || 'other';
-        const locale = req.body.language || 'vn';
-
-        if (!amount || isNaN(amount)) {
-            return res.status(400).json({ success: false, message: "Số tiền không hợp lệ" });
+        const apiKey = apiKeyHeader.split(' ')[1];
+        if (apiKey !== process.env.SEPAY_API_KEY) {
+            return res.status(401).send('Unauthorized');
         }
 
-        let vnp_Params = {
-            vnp_Version: '2.1.0',
-            vnp_Command: 'pay',
-            vnp_TmnCode: tmnCode,
-            vnp_Locale: locale,
-            vnp_CurrCode: 'VND',
-            vnp_TxnRef: orderId,
-            vnp_OrderInfo: orderInfo,
-            vnp_OrderType: orderType,
-            vnp_Amount: amount * 100,
-            vnp_ReturnUrl: returnUrl,
-            vnp_IpAddr: ipAddr,
-            vnp_CreateDate: createDate
-        };
+        const {
+            id: sepay_id,
+            gateway: bank,
+            accountNumber: account_number,
+            content,
+            transferAmount: amount,
+            referenceCode: reference_code,
+            transactionDate: transaction_date,
+        } = req.body;
 
-        if (bankCode) {
-            vnp_Params['vnp_BankCode'] = bankCode;
+        // Tìm đơn hàng khớp với nội dung và số tiền, và đang chờ thanh toán
+        const matchedOrder = await Order.findPendingByNoteAndAmount(content, amount);
+
+        if (!matchedOrder) {
+            return res.status(404).send('Order not found or already paid');
         }
 
-        vnp_Params = sortObject(vnp_Params);
+        // Cập nhật trạng thái đơn hàng thành đã thanh toán
+        const updated = await Order.updateStatus(matchedOrder.id, 'paid');
 
-        const signData = Object.entries(vnp_Params)
-            .map(([key, val]) => `${key}=${encodeURIComponent(val)}`).join('&');
+        if (!updated) {
+            return res.status(500).send('Failed to update order status');
+        }
 
-        const hmac = crypto.createHmac('sha512', secretKey);
-        const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-        vnp_Params['vnp_SecureHash'] = signed;
-
-        const queryString = require('qs').stringify(vnp_Params, { encode: false });
-        const paymentUrl = `${vnpUrl}?${queryString}`;
-
-        return res.json({
-            success: true,
-            data: {
-                payment_url: paymentUrl,
-                transaction_id: orderId
-            }
+        // Lưu bản ghi giao dịch thanh toán
+        await Payment.create({
+            sepay_id,
+            bank,
+            account_number,
+            content,
+            amount,
+            reference_code,
+            transaction_date,
+            matched_order_id: matchedOrder.id,
         });
 
+        return res.status(200).send('OK');
     } catch (error) {
-        console.error('Lỗi tạo URL thanh toán:', error);
-        return res.status(500).json({ success: false, message: 'Lỗi máy chủ khi tạo URL thanh toán' });
-    }
-};
-
-
-
-exports.vnpayReturn = (req, res) => {
-    const secretKey = process.env.VNP_HASH_SECRET;
-    let vnp_Params = req.query;
-
-    // Lấy chữ ký gửi về từ VNPAY
-    const secureHash = vnp_Params.vnp_SecureHash;
-    // Loại bỏ trường chữ ký ra khỏi params trước khi tạo lại chữ ký
-    delete vnp_Params.vnp_SecureHash;
-    delete vnp_Params.vnp_SecureHashType;
-
-    // Sắp xếp params theo key
-    const sortedParams = {};
-    Object.keys(vnp_Params).sort().forEach(key => {
-        sortedParams[key] = vnp_Params[key];
-    });
-
-    // Tạo chuỗi ký với encodeURIComponent cho từng giá trị
-    const signData = Object.entries(sortedParams)
-        .map(([key, val]) => `${key}=${encodeURIComponent(val)}`)
-        .join('&');
-
-    // Tạo chữ ký từ server
-    const hmac = crypto.createHmac('sha512', secretKey);
-    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-
-    if (signed === secureHash) {
-        // Chữ ký đúng, có thể cập nhật trạng thái đơn hàng
-        res.json({ success: true, message: 'Thanh toán thành công' });
-    } else {
-        // Chữ ký sai
-        res.json({ success: false, message: 'Sai chữ ký' });
+        console.error(error);
+        return res.status(500).send('Server error');
     }
 };
