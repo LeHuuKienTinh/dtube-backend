@@ -51,7 +51,7 @@ exports.handleSePayWebhook = async (req, res) => {
             sepay_id,
             bank,
             account_number,
-            content: code,
+            content: note,
             amount,
             reference_code,
             transaction_date,
