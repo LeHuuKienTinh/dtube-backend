@@ -1,6 +1,8 @@
 const Order = require('../models/order.model');
 const Payment = require('../models/payment.model');
 const db = require('../config/db');
+const { updateExpiryTime } = require('../models/userService');
+
 
 exports.handleSePayWebhook = async (req, res) => {
     try {
@@ -37,8 +39,20 @@ exports.handleSePayWebhook = async (req, res) => {
         if (!updated) {
             return res.status(500).send('Failed to update order status');
         }
-        console.log('matchedOrder.user_id:', matchedOrder.user_id);
-        // Cập nhật user.type từ 3 -> 2 nếu cần
+
+        ///TĂNG THỜI GIANN EXPERIII
+        if (matchedOrder.package_id) {
+            const [packageRows] = await db.query(
+                'SELECT kieu_thoi_gian FROM pakage WHERE id = ?',
+                [matchedOrder.package_id]
+            );
+
+            if (packageRows.length > 0) {
+                const duration = parseInt(packageRows[0].kieu_thoi_gian, 10);
+                await updateExpiryTime(matchedOrder.user_id, duration);
+            }
+        }
+
         if (matchedOrder.user_id) {
             const [userRows] = await db.query('SELECT type FROM users WHERE id = ?', [matchedOrder.user_id]);
             console.log('Current user type:', userRows[0].type);
@@ -66,5 +80,18 @@ exports.handleSePayWebhook = async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).send('Server error');
+    }
+};
+exports.buyPackage = async (req, res) => {
+    try {
+        const userId = req.user.id;  // hoặc từ req.body
+        const months = req.body.months; // số tháng gói mua
+
+        await updateExpiryTime(userId, months);
+
+        res.status(200).send({ message: 'Đã gia hạn tài khoản thành công' });
+        console.log("MUA GÓI THÀNH CONGGG")
+    } catch (error) {
+        res.status(500).send({ message: error.message });
     }
 };

@@ -33,7 +33,7 @@ const checkExpiry = async () => {
         });
 
         await Promise.all([...updateExpired, ...updateValid]);
-        console.log("HÀM KIỂM TRA ĐÃ CHẠYYYYS")
+        // console.log("HÀM KIỂM TRA ĐÃ CHẠYYYYS")
     } catch (err) {
         console.error('Error checking user expiry:', err);
     }

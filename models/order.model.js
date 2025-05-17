@@ -28,6 +28,16 @@ const Order = {
             [status, id]
         );
         return result.affectedRows > 0;
+    },
+    // Tìm đơn hàng trạng thái pending theo user_id
+    findPendingByUserId: async (userId) => {
+        const [rows] = await db.execute('SELECT * FROM orders WHERE user_id = ? AND payment_status = ?', [userId, 'pending']);
+        return rows.length > 0 ? rows[0] : null;
+    },
+
+    deleteById: async (orderId) => {
+        const [result] = await db.execute('DELETE FROM orders WHERE id = ?', [orderId]);
+        return result.affectedRows > 0;
     }
 };
 

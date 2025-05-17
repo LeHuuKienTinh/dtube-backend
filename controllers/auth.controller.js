@@ -15,12 +15,11 @@ exports.register = async (req, res) => {
     const { username, name, mail, password, type = '3' } = req.body;
     const existingUser = await User.findByUsername(username) || await User.findByMail(mail);
     if (existingUser) {
-      return res.status(400).send({ message: 'Username or email already exists' });
+      return res.status(400).send({ message: 'Email hoặc username đã tồn tại' });
     }
     const hashedPassword = bcrypt.hashSync(password, 8);
     const created = new Date();
-    const expiry_time = new Date();
-    expiry_time.setFullYear(created.getFullYear() + 1);
+    const expiry_time = new Date(created.getTime() - 24 * 60 * 60 * 1000); // 1 ngày trước ngày đăng ký
 
     const userId = await User.create({ username, name, mail, password: hashedPassword, type, created, expiry_time });
     res.status(201).send({ message: 'User registered successfully', userId });
