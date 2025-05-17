@@ -1,5 +1,6 @@
 const Order = require('../models/order.model');
-
+const db = require('../config/db');
+console.log('DB connectedddd:', !!db.query); //
 exports.createOrder = async (req, res) => {
     try {
         const { userId, packageId, amount, note } = req.body;
