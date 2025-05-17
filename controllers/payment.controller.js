@@ -46,8 +46,10 @@ exports.handleSePayWebhook = async (req, res) => {
                 const [result] = await db.query('UPDATE users SET type = ? WHERE id = ?', ['2', matchedOrder.user_id]);
                 console.log('affectedRows:', result.affectedRows);
             }
+            const [check] = await db.query('SELECT type FROM users WHERE id = ?', [matchedOrder.user_id]);
+            console.log('User type after update:', check[0].type);
         }
-        console.log('User type after update:', check[0].type);
+
         // Ghi nhận giao dịch
         await Payment.create({
             sepay_id,
