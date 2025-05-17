@@ -47,7 +47,7 @@ exports.handleSePayWebhook = async (req, res) => {
                 console.log('affectedRows:', result.affectedRows);
             }
         }
-
+        console.log('User type after update:', check[0].type);
         // Ghi nhận giao dịch
         await Payment.create({
             sepay_id,
