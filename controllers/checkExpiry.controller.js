@@ -26,14 +26,14 @@ const checkExpiry = async () => {
             const updateQuery = `UPDATE users SET type = 2 WHERE id = ?`;
             try {
                 await db.execute(updateQuery, [user.id]);
-      
+
             } catch (err) {
                 console.error(`Error updating user ${user.id} to valid:`, err);
             }
         });
 
         await Promise.all([...updateExpired, ...updateValid]);
-
+        console.log("HÀM KIỂM TRA ĐÃ CHẠYYYYS")
     } catch (err) {
         console.error('Error checking user expiry:', err);
     }
