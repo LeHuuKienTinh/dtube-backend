@@ -37,12 +37,14 @@ exports.handleSePayWebhook = async (req, res) => {
         if (!updated) {
             return res.status(500).send('Failed to update order status');
         }
-
+        console.log('matchedOrder.user_id:', matchedOrder.user_id);
         // Cập nhật user.type từ 3 -> 2 nếu cần
         if (matchedOrder.user_id) {
             const [userRows] = await db.query('SELECT type FROM users WHERE id = ?', [matchedOrder.user_id]);
-            if (userRows.length > 0 && userRows[0].type === '3') {
-                await db.query('UPDATE users SET type = ? WHERE id = ?', ['2', matchedOrder.user_id]);
+            console.log('Current user type:', userRows[0].type);
+            if (userRows.length > 0 && String(userRows[0].type) === '3') {
+                const [result] = await db.query('UPDATE users SET type = ? WHERE id = ?', ['2', matchedOrder.user_id]);
+                console.log('affectedRows:', result.affectedRows);
             }
         }
 
