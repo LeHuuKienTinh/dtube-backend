@@ -31,7 +31,7 @@ exports.checkOrderStatus = async (req, res) => {
         const { note } = req.params;
 
         const [rows] = await db.query(`
-      SELECT o.payment_status, o.user_id, u.name, u.email, u.role 
+      SELECT o.payment_status, o.user_id, u.name, u.mail, u.type, u.username
       FROM orders o
       JOIN users u ON o.user_id = u.id
       WHERE o.note = ?
@@ -51,8 +51,9 @@ exports.checkOrderStatus = async (req, res) => {
             response.user = {
                 id: order.user_id,
                 name: order.name,
-                email: order.email,
-                role: order.role
+                mail: order.mail,
+                type: order.type,
+                username: order.username
             };
         }
 
