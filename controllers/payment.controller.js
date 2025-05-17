@@ -41,8 +41,8 @@ exports.handleSePayWebhook = async (req, res) => {
         // Cập nhật user.type từ 3 -> 2 nếu cần
         if (matchedOrder.user_id) {
             const [userRows] = await db.query('SELECT type FROM users WHERE id = ?', [matchedOrder.user_id]);
-            if (userRows.length > 0 && userRows[0].type === 3) {
-                await db.query('UPDATE users SET type = 2 WHERE id = ?', [matchedOrder.user_id]);
+            if (userRows.length > 0 && userRows[0].type === '3') {
+                await db.query('UPDATE users SET type = ? WHERE id = ?', ['2', matchedOrder.user_id]);
             }
         }
 
