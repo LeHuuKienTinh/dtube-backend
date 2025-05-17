@@ -53,4 +53,4 @@ app.use('/api/admin/badwords', badwordsRoutes);
 app.use('/api/order', orderRoutes);
 
 // Run App
-app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên cổng ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên cổng 8h40 ${PORT}`));
