@@ -29,15 +29,37 @@ exports.createOrder = async (req, res) => {
 exports.checkOrderStatus = async (req, res) => {
     try {
         const { note } = req.params;
-        const [rows] = await db.query('SELECT payment_status FROM orders WHERE note = ?', [note]);
-        console.log("NOTEEE", note)
+
+        const [rows] = await db.query(`
+      SELECT o.payment_status, o.user_id, u.name, u.email, u.role 
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      WHERE o.note = ?
+    `, [note]);
+
         if (rows.length === 0) {
-            console.log("k có đơn")
-            return res.status(404).json({ message: 'KHONG TÌM THẤY ĐƠN HÀNG' });
+            return res.status(404).json({ message: 'KHÔNG TÌM THẤY ĐƠN HÀNG' });
         }
-        return res.json({ status: rows[0].payment_status });
+
+        const order = rows[0];
+
+        const response = {
+            status: order.payment_status
+        };
+
+        if (order.payment_status === 'paid') {
+            response.user = {
+                id: order.user_id,
+                name: order.name,
+                email: order.email,
+                role: order.role
+            };
+        }
+
+        return res.json(response);
+
     } catch (error) {
         console.error('Error checking order status:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json({ message: 'Lỗi máy chủ' });
     }
 };
