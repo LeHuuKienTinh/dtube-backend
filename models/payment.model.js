@@ -10,7 +10,7 @@ const Payment = {
     },
     getByOrderId: async (orderId) => {
         const [rows] = await db.execute(
-            `SELECT * FROM payments WHERE sepay_id = ? LIMIT 1`,
+            `SELECT * FROM payments WHERE matched_order_id = ? LIMIT 1`,
             [orderId]
         );
         return rows[0] || null;
