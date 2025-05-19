@@ -95,3 +95,19 @@ exports.buyPackage = async (req, res) => {
         res.status(500).send({ message: error.message });
     }
 };
+
+exports.getPaymentByOrderId = async (req, res) => {
+    const { id } = req.params; // đây là order.id
+
+    try {
+        const payment = await Payment.getByOrderId(id);
+        if (!payment) {
+            return res.status(404).json({ message: 'Không tìm thấy thanh toán nào cho đơn hàng này.' });
+        }
+
+        res.status(200).json(payment);
+    } catch (error) {
+        console.error('Lỗi khi lấy chi tiết thanh toán:', error);
+        res.status(500).json({ message: 'Lỗi server khi lấy thông tin thanh toán.' });
+    }
+};

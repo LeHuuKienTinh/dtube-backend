@@ -64,3 +64,12 @@ exports.checkOrderStatus = async (req, res) => {
         return res.status(500).json({ message: 'Lỗi máy chủ' });
     }
 };
+exports.getAllOrders = async (req, res) => {
+    try {
+        const orders = await Order.findAll();
+        return res.json(orders);
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách đơn hàng:', error);
+        return res.status(500).json({ message: 'Lỗi máy chủ' });
+    }
+};

@@ -7,6 +7,13 @@ const Payment = {
             [sepay_id, bank, account_number, content, amount, reference_code, transaction_date, matched_order_id]
         );
         return result.insertId;
+    },
+    getByOrderId: async (orderId) => {
+        const [rows] = await db.execute(
+            `SELECT * FROM payments WHERE sepay_id = ? LIMIT 1`,
+            [orderId]
+        );
+        return rows[0] || null;
     }
 };
 
