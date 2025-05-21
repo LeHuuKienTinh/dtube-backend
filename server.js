@@ -18,17 +18,11 @@ const viewRoutes = require('./router/view.routes');
 const badwordsRoutes = require('./router/badword.routes');
 const likeRoutes = require('./router/like.routes');
 const deviceRoutes = require('./router/device.routes');
-// const payRoutes = require('./router/pay.routes');
 const reportRoutes = require('./router/report.routes');
-// const paymentRoutes = require('./router/payment.routes');
 const orderRoutes = require('./router/order.routes');
+const notificationsRoutes = require('./router/notifications.routes')
 // MidleWare
-app.use(cors(
-    //     {
-    //     origin: 'http://localhost:5173', // Hoặc '*', nhưng không an toàn khi deploy
-    //     credentials: true, // nếu dùng cookie/jwt
-    //   }
-));
+app.use(cors());
 app.use(express.json());
 
 
@@ -43,14 +37,13 @@ app.use('/api/expiry', expiryRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/view', viewRoutes);
 app.use('/api/device', deviceRoutes);
-// app.use('/api/pay', payRoutes);
 app.use('/api/reports', reportRoutes);
-// app.use('/api/payment', paymentRoutes);
 // Sử dụng router Admin 
 app.use('/api/admin', userRoutes);
 app.use('/api/admin/banmovie', banflimRoutes);
 app.use('/api/admin/badwords', badwordsRoutes);
 app.use('/api/order', orderRoutes);
+app.use('/api/noti', notificationsRoutes);
 
 // Run App
 app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên cổng 9h09 ${PORT}`));

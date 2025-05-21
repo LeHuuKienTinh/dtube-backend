@@ -18,7 +18,9 @@ const getLatestMovies = async (req, res) => {
       name: movie.name,
       slug: movie.slug,
       status: movie.status,
-      current: movie.episode_current
+      current: movie.episode_current,
+      year: movie.year,
+      origin_name: movie.origin_name
     }));
 
     res.json({ items: formattedItems });

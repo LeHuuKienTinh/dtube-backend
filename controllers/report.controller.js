@@ -1,6 +1,6 @@
 // controllers/report.controller.js
 const db = require('../config/db'); // mysql2 pool connection
-
+const { createNotification } = require('./notifications.controller');
 // Create a new report
 exports.createReport = async (req, res) => {
     const {
@@ -141,22 +141,37 @@ exports.getAllReports = async (req, res) => {
 };
 
 exports.updateReportStatus = async (req, res) => {
-  const { report_id } = req.params;
-  const { status } = req.body;
-  if (status == null) {
-    return res.status(400).json({ error: 'Thiếu status' });
-  }
-  try {
-    const [result] = await db.execute(
-      'UPDATE report SET status = ?, updated_at = NOW() WHERE id_report = ?',
-      [status, report_id]
-    );
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Report not found' });
+    const { report_id } = req.params;
+    const { status } = req.body;
+
+    if (status == null) {
+        return res.status(400).json({ error: 'Thiếu status' });
     }
-    res.status(200).json({ message: 'Status updated' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update status' });
-  }
+
+    try {
+        const [result] = await db.execute(
+            'UPDATE report SET status = ?, updated_at = NOW() WHERE id_report = ?',
+            [status, report_id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Không tìm thấy báo cáo' });
+        }
+
+        // Nếu là status = 1 (đã xử lý), gửi thông báo
+        if (status == 1) {
+            const [reportRows] = await db.query(
+                `SELECT * FROM report WHERE id_report = ?`,
+                [report_id]
+            );
+            const report = reportRows[0];
+
+            await createNotification(report.id_user, 'report_handled', `Báo cáo của bạn về phim "${report.movie_name}" đã được xử lý.`);
+        }
+
+        res.status(200).json({ message: 'Cập nhật trạng thái thành công' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Lỗi khi cập nhật trạng thái' });
+    }
 };

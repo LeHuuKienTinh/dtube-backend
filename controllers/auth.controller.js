@@ -33,10 +33,8 @@ exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await User.findByUsername(username);
-    if (!user) return res.status(404).send({ message: 'User not found' });
-
     const passwordIsValid = bcrypt.compareSync(password, user.password);
-    if (!passwordIsValid) return res.status(401).send({ message: 'Invalid password' });
+    if (!user || !passwordIsValid) return res.status(404).send({ message: 'User or pass incorrect' });
 
     const token = jwt.sign({ id: user.id, type: user.type }, JWT_SECRET, { expiresIn: 86400 });
     res.status(200).send({
@@ -67,10 +65,10 @@ exports.sendTokenLogin = async (req, res) => {
     const subject = 'Token Đăng Nhập DTube';
     const html = `
       <div style="background-color: #fff; padding: 30px; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; border: 1px solid #e50914; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); max-width: 600px; margin: auto; background: linear-gradient(45deg, #f5f5f5, #fff);">
-        <h1 style="text-align: center; color: #e50914; font-size: 28px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">DTube - Web xem phim số 1 Việt Nam</h1>
+        <h1 style="text-align: center; color: #e50914; font-size: 28px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">DTube</h1>
         <p style="font-size: 18px; text-align: center;">Chào bạn!</p>
         <p style="font-size: 16px; text-align: center;">Bấm vào liên kết dưới đây để đăng nhập vào DTube:</p>
-        <a href="${process.env.FRONTEND_URL}/token/${token}" style="display: inline-block; text-align: center; font-size: 18px; font-weight: bold; background-color: #000; color: #fff; padding: 15px 30px; text-decoration: none; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2); transition: background-color 0.3s;">
+        <a href="${process.env.FRONTEND_URL}/token/${token}" style="display: block; width: fit-content; margin: 20px auto; text-align: center; font-size: 18px; font-weight: bold; background-color: #000; color: #fff; padding: 15px 30px; text-decoration: none; border-radius: 8px; box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2); transition: background-color 0.3s;">
           Đăng nhập ngay
         </a>
         <br><br>
