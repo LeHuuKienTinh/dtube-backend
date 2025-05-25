@@ -46,4 +46,4 @@ app.use('/api/order', orderRoutes);
 app.use('/api/noti', notificationsRoutes);
 
 // Run App
-app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên cổng 9h09 ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên cổng 1h26 ${PORT}`));

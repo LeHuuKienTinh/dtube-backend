@@ -55,35 +55,40 @@ exports.sendSystemNotification = async (req, res) => {
 };
 exports.getAllNotifications = async (req, res) => {
     try {
+        // Lấy toàn bộ notifications cùng user name
         const [rows] = await db.query(`
-            SELECT *
-                FROM (
-                    SELECT 
-                        n.id,
-                        CASE 
-                            WHEN n.type = 'system_noti' THEN NULL 
-                            ELSE n.user_id 
-                        END AS user_id,
-                        CASE 
-                            WHEN n.type = 'system_noti' THEN 'Tất cả' 
-                            ELSE u.name 
-                        END AS username,
-                        n.type,
-                        n.content,
-                        n.created_at,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY 
-                                CASE WHEN n.type = 'system_noti' THEN n.content ELSE n.id END,
-                                CASE WHEN n.type = 'system_noti' THEN n.created_at ELSE n.id END
-                            ORDER BY n.id
-                        ) as rn
-                    FROM notifications n
-                    JOIN users u ON n.user_id = u.id
-                ) as temp
-                WHERE rn = 1
-                ORDER BY created_at DESC
-        `);
-        res.json(rows);
+      SELECT 
+        n.id,
+        n.user_id,
+        u.name AS username,
+        n.type,
+        n.content,
+        n.created_at
+      FROM notifications n
+      LEFT JOIN users u ON n.user_id = u.id
+      ORDER BY n.created_at DESC
+    `);
+
+        // Lọc loại bỏ trùng lặp tương tự logic ROW_NUMBER() theo kiểu system_noti
+        const unique = [];
+        const seen = new Set();
+
+        for (const row of rows) {
+            let key;
+
+            if (row.type === 'system_noti') {
+                key = `${row.content}_${row.created_at.toISOString()}`; // nối content + created_at
+            } else {
+                key = `${row.id}`; // duy nhất theo id
+            }
+
+            if (!seen.has(key)) {
+                seen.add(key);
+                unique.push(row);
+            }
+        }
+
+        res.json(unique);
     } catch (err) {
         console.error('Lỗi khi lấy danh sách thông báo:', err);
         res.status(500).json({ message: 'Lỗi server', error: err.message });
