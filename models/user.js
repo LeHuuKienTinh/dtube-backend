@@ -5,13 +5,13 @@ const User = {
         const query = 'INSERT INTO `users`(`id`, `username`, `name`, `mail`, `password`, `type`, `created`, `expiry_time`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         try {
             const [result] = await db.query(query, [
-                user.id, 
-                user.username, 
-                user.name, 
-                user.mail, 
-                user.password, 
-                user.type, 
-                user.created, 
+                user.id,
+                user.username,
+                user.name,
+                user.mail,
+                user.password,
+                user.type,
+                user.created,
                 user.expiry_time
             ]);
             return result;
@@ -44,13 +44,13 @@ const User = {
         const query = 'UPDATE `users` SET `username` = ?, `name` = ?, `mail` = ?, `password` = ?, `type` = ?, `created` = ?, `expiry_time` = ? WHERE `id` = ?';
         try {
             const [result] = await db.query(query, [
-                user.username, 
-                user.name, 
-                user.mail, 
-                user.password, 
-                user.type, 
-                user.created, 
-                user.expiry_time, 
+                user.username,
+                user.name,
+                user.mail,
+                user.password,
+                user.type,
+                user.created,
+                user.expiry_time,
                 id
             ]);
             return result;
@@ -67,7 +67,8 @@ const User = {
         } catch (err) {
             throw err;
         }
-    }
+    },
+    
 };
 
 module.exports = User;

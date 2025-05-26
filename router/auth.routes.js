@@ -14,6 +14,7 @@ router.get('/me/:id', authMiddleware.verifyToken, authController.getUserTypeById
 router.post('/forgotpassword', authController.forgotPassword);
 router.post('/verifyotp', authController.verifyOTP);
 router.post('/resetpassword', authController.resetPassword);
+router.get('/verify-email', authController.verifyEmail);
 
 // Role-based test routes
 router.get('/test/admin', [

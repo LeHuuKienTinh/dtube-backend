@@ -11,22 +11,58 @@ let otpStore = {};
 // Register new user
 exports.register = async (req, res) => {
   try {
-    console.log('Register body:', req.body);  // kiểm tra xem có type ko
+    console.log('Register body:', req.body);
     const { username, name, mail, password, type = '3' } = req.body;
+
     const existingUser = await User.findByUsername(username) || await User.findByMail(mail);
     if (existingUser) {
       return res.status(400).send({ message: 'Email hoặc username đã tồn tại' });
     }
+
     const hashedPassword = bcrypt.hashSync(password, 8);
     const created = new Date();
-    const expiry_time = new Date(created.getTime() - 24 * 60 * 60 * 1000); // 1 ngày trước ngày đăng ký
+    const expiry_time = new Date(created.getTime() - 24 * 60 * 60 * 1000); // 1 ngày trước
 
-    const userId = await User.create({ username, name, mail, password: hashedPassword, type, created, expiry_time });
-    res.status(201).send({ message: 'User registered successfully', userId });
+    const userId = await User.create({
+      username,
+      name,
+      mail,
+      password: hashedPassword,
+      type,
+      created,
+      expiry_time,
+      is_verified: false // đánh dấu chưa xác thực
+    });
+
+    // Tạo token xác thực email, hết hạn sau 10 phút
+    const verifyToken = jwt.sign({ mail }, JWT_SECRET, { expiresIn: 600 });
+
+    // Gửi mail xác thực
+    const subject = 'Xác thực tài khoản DTube';
+    const html = `
+      <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <h2 style="color: #e50914;">Chào ${name || 'bạn'},</h2>
+        <p>Cảm ơn bạn đã đăng ký tài khoản tại DTube.</p>
+        <p>Vui lòng bấm vào nút bên dưới để xác thực email:</p>
+        <a href="${process.env.BACKEND_URL}/api/auth/verify-email?token=${verifyToken}" 
+           style="display: inline-block; background-color: #e50914; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
+          Xác thực email
+        </a>
+        <p style="margin-top: 20px;">Nếu bạn không đăng ký, vui lòng bỏ qua email này.</p>
+      </div>
+    `;
+
+    await sendLoginTokenMail(mail, subject, html);
+
+    res.status(201).send({
+      message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.',
+      userId
+    });
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
 };
+
 
 // Login
 exports.login = async (req, res) => {
@@ -35,7 +71,9 @@ exports.login = async (req, res) => {
     const user = await User.findByUsername(username);
     const passwordIsValid = bcrypt.compareSync(password, user.password);
     if (!user || !passwordIsValid) return res.status(404).send({ message: 'User or pass incorrect' });
-
+    if (!user.is_verified) {
+      return res.status(403).send({ message: 'Tài khoản chưa được xác minh email. Vui lòng kiểm tra hộp thư.' });
+    }
     const token = jwt.sign({ id: user.id, type: user.type }, JWT_SECRET, { expiresIn: 86400 });
     res.status(200).send({
       id: user.id,
@@ -45,7 +83,8 @@ exports.login = async (req, res) => {
       type: user.type,
       created: user.created,
       accountExpiryTime: user.expiry_time,
-      accessToken: token
+      accessToken: token,
+      is_verified: user.is_verified
     });
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -183,5 +222,80 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(401).send({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+  }
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).send({ message: 'Thiếu mã xác thực' });
+    }
+
+    // Giải mã token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { mail } = decoded;
+
+    // Tìm người dùng
+    const user = await User.findByMail(mail);
+    if (!user) {
+      return res.status(404).send({ message: 'Không tìm thấy người dùng' });
+    }
+
+    // Kiểm tra đã xác thực chưa
+    if (user.is_verified) {
+      return res.status(200).send({ message: 'Tài khoản đã được xác thực trước đó' });
+    }
+
+    // Cập nhật trạng thái is_verified
+    await User.verifyMail(mail);
+
+    res.send(`
+  <html>
+    <head>
+      <title>Xác thực Email</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          background-color: #f9f9f9;
+        }
+        .container {
+          text-align: center;
+        }
+        .login-button {
+          margin-top: 20px;
+          padding: 10px 20px;
+          background-color:rgb(255, 0, 0);
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+        }
+        .login-button:hover {
+          background-color:rgb(159, 0, 0);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Xác thực email thành công!</h2>
+        <p>Bạn có thể đăng nhập để sử dụng hệ thống.</p>
+        <button class="login-button" onclick="window.location.href='http://localhost:5173/login'">Đăng nhập</button>
+      </div>
+    </body>
+  </html>
+`);
+
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(400).send({ message: 'Mã xác thực đã hết hạn' });
+    }
+    return res.status(500).send({ message: 'Lỗi máy chủ: ' + error.message });
   }
 };

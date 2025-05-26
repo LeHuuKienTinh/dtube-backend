@@ -41,6 +41,12 @@ class User {
     );
     return result.affectedRows > 0;
   }
+
+  static async verifyMail(mail) {
+    const sql = 'UPDATE users SET is_verified = 1 WHERE mail = ?';
+    const [result] = await db.execute(sql, [mail]);
+    return result;
+  }
 }
 
 module.exports = User;
