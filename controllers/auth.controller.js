@@ -299,3 +299,25 @@ exports.verifyEmail = async (req, res) => {
     return res.status(500).send({ message: 'Lỗi máy chủ: ' + error.message });
   }
 };
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { usermail, oldPassword, newPassword } = req.body;
+
+    const user = await User.findByMail(usermail);
+    if (!user) return res.status(404).send({ message: 'Không tìm thấy người dùng' });
+
+    const isMatch = bcrypt.compareSync(oldPassword, user.password);
+    if (!isMatch) return res.status(400).send({ message: 'Mật khẩu cũ không đúng' });
+
+    const hashedPassword = bcrypt.hashSync(newPassword, 8);
+    const updated = await User.updatePasswordByMail(usermail, hashedPassword);
+
+    if (!updated) return res.status(500).send({ message: 'Cập nhật mật khẩu thất bại' });
+
+    return res.status(200).send({ message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ message: 'Lỗi server, vui lòng thử lại sau' });
+  }
+};

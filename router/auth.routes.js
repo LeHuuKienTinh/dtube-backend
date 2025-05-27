@@ -15,6 +15,7 @@ router.post('/forgotpassword', authController.forgotPassword);
 router.post('/verifyotp', authController.verifyOTP);
 router.post('/resetpassword', authController.resetPassword);
 router.get('/verify-email', authController.verifyEmail);
+router.post('/change-password', authController.changePassword);
 
 // Role-based test routes
 router.get('/test/admin', [
