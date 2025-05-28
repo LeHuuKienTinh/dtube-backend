@@ -72,7 +72,7 @@ const commentController = {
     const userType = req.userType;
 
     try {
-      const [rows] = await db.execute("SELECT * FROM comments WHERE id = ?", [
+      const [rows] = await db.execute("SELECT * FROM comments WHERE    = ?", [
         id,
       ]);
       if (rows.length === 0) {

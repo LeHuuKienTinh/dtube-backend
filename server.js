@@ -22,6 +22,7 @@ const reportRoutes = require('./router/report.routes');
 const orderRoutes = require('./router/order.routes');
 const notificationsRoutes = require('./router/notifications.routes')
 const chartRoutes = require('./router/chart.routes')
+const groqChatRoutes = require('./router/groq.routes');
 // MidleWare
 app.use(cors());
 app.use(express.json());
@@ -46,6 +47,6 @@ app.use('/api/admin/badwords', badwordsRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/noti', notificationsRoutes);
 app.use('/api/chart', chartRoutes);
-
+app.use('/api/groq', groqChatRoutes);
 // Run App
 app.listen(PORT, '0.0.0.0', () => console.log(`Server chạy trên cổng 1h26 ${PORT}`));
